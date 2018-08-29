@@ -74,4 +74,7 @@ func main() {
 
 	// Register the handlers and Start the web server
 	h.ListenAndServe()
+
+	// TODO: Need to close the error reporting client when program exits
+	// See the logrus hook extension
 }
