@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
 	log "github.com/sirupsen/logrus"
+	"github.com/basvanbeek/ocsql"
 )
 
 type Client struct {
@@ -23,17 +24,22 @@ func NewClient() *Client {
 
 // Open opens the connection to the MySql database
 func (c *Client) Open() error {
-	log.Info("Before opening the database")
-	db, err := sql.Open("mysql", "root:passw0rd@/catalog?charset=utf8")
+	log.Debug("Before opening the database")
+	// Setup the OpenCensus database tracing
+	ocDriverName, err := ocsql.Register("mysql", ocsql.WithAllTraceOptions())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to register the ocsql driver: %v", err)
+	}
+	db, err := sql.Open(ocDriverName, "root:passw0rd@/catalog?charset=utf8")
+	if err != nil {
+		log.Fatalf("Failed to open the catalog Database: %v",err)
 	}
 	c.db = db
 	// Ping the database
-	log.Info("Before pinging mysql.")
+	log.Debug("Before pinging mysql catalog database.")
 	err = db.Ping()
 	if err != nil {
-		log.Fatalf("Could not ping db: %v\n", err)
+		log.Fatalf("Could not ping the catalog database: %v\n", err)
 	}
 	return err
 }

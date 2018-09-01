@@ -1,5 +1,7 @@
 package catalog
 
+import "golang.org/x/net/context"
+
 // ProductID represents a product identifier.
 // type ProductID string
 
@@ -18,8 +20,8 @@ type Client interface {
 
 // ProductService represents a service for managing products.
 type ProductService interface {
-	Product(id string) (*Product, error)
-	Products() ([]*Product, error)
-	CreateProduct(p *Product) error
-	DeleteProduct(id string) error
+	Product(ctx context.Context, id string) (*Product, error)
+	Products(ctx context.Context) ([]*Product, error)
+	CreateProduct(ctx context.Context, p *Product) error
+	DeleteProduct(ctx context.Context, id string) error
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/handlers"
 	"os"
 	"go.opencensus.io/plugin/ochttp"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -67,15 +68,11 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	productId := vars["id"]
 	log.Info("id=%v\n", productId)
-	product, err := h1.getProduct(productId)
+	product, err := h1.getProduct(r.Context(),productId)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Error retrieving product: %v\n", err)
-		log.Error()
-		//errorClient.Report(errorreporting.Entry{
-		//	Error: err,
-		//	Req: r,
-		//})
+		log.Error(err)
 	} else {
 		p, err := json.Marshal(product)
 		if err != nil {
@@ -86,19 +83,19 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getProduct(productId string) (*catalog.Product, error) {
+func (h *Handler) getProduct(ctx context.Context, productId string) (*catalog.Product, error) {
 	if len(productId) == 0 {
 		log.Fatal("Error productId not passed in")
 	}
 	log.Info("Inside getProduct.")
 	// Get the produce from the database
-	product, err := h.ProductService.Product(productId)
+	product, err := h.ProductService.Product(ctx, productId)
 	return product, err
 }
 
 // GetProducts retrieves all of the products from the database.
 func GetProducts(w http.ResponseWriter, r *http.Request) {
-	products, err := h1.getProducts()
+	products, err := h1.getProducts(r.Context())
 	if err != nil {
 		fmt.Fprintf(w, "An error occured: %v\n", err)
 	} else {
@@ -115,8 +112,8 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getProducts() ([]*catalog.Product, error) {
-	products, err := h.ProductService.Products()
+func (h *Handler) getProducts(ctx context.Context) ([]*catalog.Product, error) {
+	products, err := h.ProductService.Products(ctx)
 	return products, err
 }
 
@@ -128,7 +125,7 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Info("The body that was posted: %v\n", product.ProductCode)
 	// Add the catalog to the database
-	err := h1.ProductService.CreateProduct(product)
+	err := h1.ProductService.CreateProduct(r.Context(), product)
 	if err != nil {
 		log.Fatal("Error adding product: %v\n", err)
 	} else {
@@ -137,8 +134,8 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) addProduct(product catalog.Product) error {
-	err := h.ProductService.CreateProduct(&product)
+func (h *Handler) addProduct(ctx context.Context, product catalog.Product) error {
+	err := h.ProductService.CreateProduct(ctx, &product)
 	return err
 }
 
@@ -148,7 +145,7 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	productId := vars["id"]
 	log.Info("id=%v\n", productId)
-	err := h1.ProductService.DeleteProduct(productId)
+	err := h1.ProductService.DeleteProduct(r.Context(), productId)
 	if err != nil {
 		fmt.Fprintf(w, "Error when deleting product with id: %v\n", productId)
 	} else {
@@ -157,7 +154,7 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) deleteProduct(id string) error {
-	err := h.ProductService.DeleteProduct(id)
+func (h *Handler) deleteProduct(ctx context.Context, id string) error {
+	err := h.ProductService.DeleteProduct(ctx, id)
 	return err
 }

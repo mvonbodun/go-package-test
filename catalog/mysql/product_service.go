@@ -4,6 +4,7 @@ import (
 	"github.com/mvonbodun/go-package-test/catalog"
 	log "github.com/sirupsen/logrus"
 	"fmt"
+	"golang.org/x/net/context"
 )
 
 // Ensure ProductService implements catalog.ProductService
@@ -15,10 +16,10 @@ type ProductService struct {
 }
 
 // Product returns a Product by ID.
-func (s *ProductService) Product(id string) (*catalog.Product, error) {
+func (s *ProductService) Product(ctx context.Context, id string) (*catalog.Product, error) {
 	var product catalog.Product
 	// Retrieve the Product record.
-	err := s.client.db.QueryRow("SELECT id, productcode, shortdesc, longdesc FROM product WHERE id = ?", id).
+	err := s.client.db.QueryRowContext(ctx, "SELECT id, productcode, shortdesc, longdesc FROM product WHERE id = ?", id).
 			Scan(&product.ID, &product.ProductCode, &product.ShortDesc, &product.LongDesc)
 	if err != nil {
 		log.Printf("Error retrieving product: %v, %v\n", id, err)
@@ -28,9 +29,9 @@ func (s *ProductService) Product(id string) (*catalog.Product, error) {
 }
 
 // Products returns all Products.
-func (s *ProductService) Products() ([]*catalog.Product, error) {
+func (s *ProductService) Products(ctx context.Context) ([]*catalog.Product, error) {
 	// Query all rows in the database
-	rows, err := s.client.db.Query("SELECT id, productcode, shortdesc, longdesc FROM product")
+	rows, err := s.client.db.QueryContext(ctx, "SELECT id, productcode, shortdesc, longdesc FROM product")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,33 +55,32 @@ func (s *ProductService) Products() ([]*catalog.Product, error) {
 }
 
 // CreateProduct stores a new product in the database.
-func (s *ProductService) CreateProduct(product *catalog.Product) error {
+func (s *ProductService) CreateProduct(ctx context.Context, product *catalog.Product) error {
 	// Insert a product into the database
-	stmt, err := s.client.db.Prepare("INSERT product SET id=?, productcode=?, shortdesc=?, longdesc=?")
+	stmt, err := s.client.db.PrepareContext(ctx, "INSERT product SET productcode=?, shortdesc=?, longdesc=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	res, err := stmt.Exec(product.ID, product.ProductCode, product.ShortDesc, product.LongDesc)
+	res, err := stmt.ExecContext(ctx, product.ProductCode, product.ShortDesc, product.LongDesc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//id, err := res.LastInsertId()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//fmt.Println(id)
-	log.Printf("result: %v\n", res)
+	id, err := res.LastInsertId()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Infof("New product.ProductId: %v", id)
 	return err
 }
 
 // DeleteProduct deletes a product in the database.
-func (s *ProductService) DeleteProduct(id string) error {
+func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
 	// Delete a product from the database
-	stmt, err := s.client.db.Prepare("DELETE from product where id=?")
+	stmt, err := s.client.db.PrepareContext(ctx, "DELETE from product where id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	res, err := stmt.Exec(id)
+	res, err := stmt.ExecContext(ctx, id)
 	if err != nil {
 		log.Fatal(err)
 	}

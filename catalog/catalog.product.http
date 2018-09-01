@@ -8,11 +8,11 @@
 POST http://localhost:8080/product
 Accept: application/json
 
-{ "productId": "5", "productCode": "prod4321", "shortDesc": "Short desc for prod 5", "longDesc": "Long desc for prod 5" }
+{  "productCode": "prod4567", "shortDesc": "Short desc for prod 4", "longDesc": "Long desc for prod 4" }
 
 ###
 
-GET http://localhost:8080/product/4
+GET http://localhost:8080/product/5
 Accept: application/json
 
 ###
@@ -22,7 +22,7 @@ Accept: application/json
 
 ###
 
-DELETE http://localhost:8080/product/4
+DELETE http://localhost:8080/product/5
 Accept: application/json
 
 ###
@@ -38,6 +38,16 @@ Accept: application/json
 ###
 
 GET http://localhost:8080/fatal
+Accept: application/json
+
+###
+
+GET http://35.192.238.37/product
+Accept: application/json
+
+###
+
+GET http://35.192.238.37/product/20
 Accept: application/json
 
 ###
