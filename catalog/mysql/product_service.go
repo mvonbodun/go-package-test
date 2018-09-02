@@ -22,9 +22,8 @@ func (s *ProductService) Product(ctx context.Context, id string) (*catalog.Produ
 	err := s.client.db.QueryRowContext(ctx, "SELECT id, productcode, shortdesc, longdesc FROM product WHERE id = ?", id).
 			Scan(&product.ID, &product.ProductCode, &product.ShortDesc, &product.LongDesc)
 	if err != nil {
-		log.Printf("Error retrieving product: %v, %v\n", id, err)
+		log.Warningf("Error retrieving product: %v, %v", id, err)
 	}
-	fmt.Println(product)
 	return &product, err
 }
 
@@ -33,23 +32,21 @@ func (s *ProductService) Products(ctx context.Context) ([]*catalog.Product, erro
 	// Query all rows in the database
 	rows, err := s.client.db.QueryContext(ctx, "SELECT id, productcode, shortdesc, longdesc FROM product")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error retrieving products: %v", err)
 	}
 	defer rows.Close()
 	// Iterate over the results
 	var products []*catalog.Product
 	for rows.Next() {
-		log.Printf("About to evaluate result set: %v", rows)
 		var product catalog.Product
 		if err := rows.Scan(&product.ID, &product.ProductCode, &product.ShortDesc, &product.LongDesc); err != nil {
-			log.Fatal(err)
+			log.Fatal("Error scanning over rows: %v", err)
 		}
-		fmt.Println(product)
 		// Add the product record to the slice
 		products = append(products, &product)
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error iterating over rows: %v", err)
 	}
 	return products, err
 }

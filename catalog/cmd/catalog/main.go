@@ -13,7 +13,9 @@ import (
 	"time"
 )
 
-func init() {
+
+func main() {
+
 	// Initialize logrus logging hooks
 	var err error
 	// Initialize logrus standard logger.  This globally
@@ -25,14 +27,14 @@ func init() {
 	log.SetOutput(os.Stderr)
 
 	// Only log the warning severity or above.
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.DebugLevel)
 
-	// Add the stack hook
+	// Add the stackdriver logging and error reporting hook
 	log.AddHook(logrus_stack.StandardHook())
 
 	var sdHook *logrus.StackdriverHook
 	// Add the Stackdriver Error reporting hook
-	sdHook, err = logrus.New("catalog-app")
+	sdHook, err = logrus.New("demogeauxcommerce", "catalog-log", "catalog-err")
 	if err != nil {
 		log.Error("unable to create hook for stackdriver error reporting.")
 	}
@@ -52,16 +54,12 @@ func init() {
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 	view.SetReportingPeriod(1 * time.Second)
 
-}
-
-func main() {
-
 	// Connect to the database
 	client := mysql.NewClient()
 	log.Info("Created new MySql client")
-	err := client.Open()
+	err = client.Open()
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to open MySql client: %v", err)
 	}
 	// Close the Database connection when the program exits
 	defer client.Close()
@@ -74,7 +72,4 @@ func main() {
 
 	// Register the handlers and Start the web server
 	h.ListenAndServe()
-
-	// TODO: Need to close the error reporting client when program exits
-	// See the logrus hook extension
 }
