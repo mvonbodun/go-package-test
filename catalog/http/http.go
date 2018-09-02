@@ -68,7 +68,7 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	// Get the variables from the request
 	vars := mux.Vars(r)
 	productId := vars["id"]
-	buf := make([]byte, 1<<8)
+	buf := make([]byte, 2048)
 	runtime.Stack(buf, true)
 	log.WithField("httprequest", r).WithField("stackTrace", buf).
 	     Errorf("From the request productId=%v", productId)
