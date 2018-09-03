@@ -71,6 +71,8 @@ func New(projectID string, logName string, errServiceName string) (*StackdriverH
 	}
 	if err := loggingClient.Ping(ctx); err != nil {
 		log.Printf("Error pinging logging service: %v", err)
+	} else {
+		sh.loggingClient = loggingClient
 	}
 	// Create the logger
 	sh.logger = loggingClient.Logger(sh.logName)
@@ -84,6 +86,8 @@ func New(projectID string, logName string, errServiceName string) (*StackdriverH
 	})
 	if err != nil {
 		log.Fatalf("Failed to create stackdriver error reporting client: %v ", err)
+	} else {
+		sh.errorClient = errorClient
 	}
 	sh.errorClient = errorClient
 	return sh, err
