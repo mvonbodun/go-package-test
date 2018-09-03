@@ -1,0 +1,12 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/catalog:$COMMIT_SHA', '.']
+  dir:  'catalog'
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/catalog:$COMMIT_SHA']
+- name: 'gcr.io/cloud-builders/kubectl'
+  args: ['set', 'image', 'deployment/catalog-frontend', 'catalog=gcr.io/$PROJECT_ID/catalog:$COMMIT_SHA']
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-f'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=development'
+images: ['gcr.io/$PROJECT_ID/catalog:$COMMIT_SHA']
