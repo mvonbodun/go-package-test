@@ -42,13 +42,20 @@ Accept: application/json
 
 ###
 
-GET http://35.192.238.37/product
+GET http://35.232.93.44/product
 Accept: application/json
 
 ###
 
-GET http://35.192.238.37/product/7
+GET http://35.232.93.44/product/10
 Accept: application/json
+
+###
+
+POST http://35.232.93.44/product
+Accept: application/json
+
+{  "productCode": "prod94949", "shortDesc": "Short desc for prod 5", "longDesc": "Long desc for prod 5" }
 
 ###
 

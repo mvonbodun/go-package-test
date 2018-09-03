@@ -22,6 +22,22 @@ spec:
       containers:
       - name: "catalog"
         image: "gcr.io/demogeauxcommerce/catalog:master"
+        env:
+        - name: MYSQL_DB_HOST
+          value: 127.0.0.1:3306
+        # These secrets are required to start the pod.
+        # [START cloudsql_secrets]
+        - name: MYSQL_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: username
+        - name: MYSQL_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: password
+
       # Change <INSTANCE_CONNECTION_NAME> here to include your GCP
       # project, the region of your Cloud SQL instance and the name
       # of your Cloud SQL instance. The format is

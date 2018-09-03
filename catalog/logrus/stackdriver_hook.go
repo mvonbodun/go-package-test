@@ -69,6 +69,9 @@ func New(projectID string, logName string, errServiceName string) (*StackdriverH
 	if err != nil {
 		log.Fatalf("Failed to create stackdriver logging client: %v", err)
 	}
+	if err := loggingClient.Ping(ctx); err != nil {
+		log.Printf("Error pinging logging service: %v", err)
+	}
 	// Create the logger
 	sh.logger = loggingClient.Logger(sh.logName)
 
@@ -129,11 +132,13 @@ func (sh *StackdriverHook) Fire(entry *logrus.Entry) error {
 }
 
 func (sh *StackdriverHook) sendLogMessage(entry *logrus.Entry) {
+	log.Print("Inside stackdriver_hook sendLogMessage")
 	sh.logger.Log(logging.Entry{
 		Severity: sh.translateLogrusLevel(entry.Level),
 		Payload: entry.Message,
 		SourceLocation: sh.extractCallerFields(entry),
 	})
+	log.Print("after stackdriver_hook sendLogMessage call")
 	//for k, v := range entry.Data {
 	//	log.Printf("key: %v, value: %v, type: %v", k, v, reflect.TypeOf(v))
 	//}
