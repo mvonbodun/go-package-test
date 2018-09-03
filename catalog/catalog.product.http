@@ -47,7 +47,7 @@ Accept: application/json
 
 ###
 
-GET http://35.232.93.44/product/10
+GET http://35.232.93.44/product/15
 Accept: application/json
 
 ###

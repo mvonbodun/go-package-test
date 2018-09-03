@@ -12,6 +12,7 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 	"golang.org/x/net/context"
 	"runtime"
+	"net/http/httputil"
 )
 
 var (
@@ -99,6 +100,13 @@ func (h *Handler) getProduct(ctx context.Context, productId string) (*catalog.Pr
 
 // GetProducts retrieves all of the products from the database.
 func GetProducts(w http.ResponseWriter, r *http.Request) {
+	// Print the request header
+	requestDump, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		log.Errorf("Failed to get request dump: %v", err)
+	}
+	log.Debugf("Request header dump: %v", string(requestDump))
+	log.Debugf("Request context: %v", r.Context())
 	products, err := h1.getProducts(r.Context())
 	if err != nil {
 		fmt.Fprintf(w, "An error occured retrieving products: %v", err)
