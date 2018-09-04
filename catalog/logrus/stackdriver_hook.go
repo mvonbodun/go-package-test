@@ -76,6 +76,11 @@ func New(projectID string, logName string, errServiceName string) (*StackdriverH
 	}
 	// Create the logger
 	sh.logger = loggingClient.Logger(sh.logName)
+	// Test the logger
+	sh.logger.Log(logging.Entry{
+		Severity:logging.Debug,
+		Payload: "Right after ping to logging service.",
+	})
 
 	// Create the client to the stackdriver error reporting service.
 	errorClient, err := errorreporting.NewClient(ctx, sh.projectID, errorreporting.Config{
