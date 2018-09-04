@@ -22,7 +22,7 @@ func (s *ProductService) Product(ctx context.Context, id string) (*catalog.Produ
 	err := s.client.db.QueryRowContext(ctx, "SELECT id, productcode, shortdesc, longdesc FROM product WHERE id = ?", id).
 			Scan(&product.ID, &product.ProductCode, &product.ShortDesc, &product.LongDesc)
 	if err != nil {
-		log.Warningf("Error retrieving product: %v, %v", id, err)
+		log.WithField("ctx", ctx).Warningf("Error retrieving product: %v, %v", id, err)
 	}
 	return &product, err
 }

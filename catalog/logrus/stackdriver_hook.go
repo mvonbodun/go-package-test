@@ -10,6 +10,7 @@ import (
 	"github.com/facebookgo/stack"
 	logging2 "google.golang.org/genproto/googleapis/logging/v2"
 	"net/http"
+	"go.opencensus.io/trace"
 )
 
 type StackdriverHook struct {
@@ -142,10 +143,24 @@ func (sh *StackdriverHook) Fire(entry *logrus.Entry) error {
 
 func (sh *StackdriverHook) sendLogMessage(entry *logrus.Entry) {
 	log.Print("Inside stackdriver_hook sendLogMessage")
+	var traceId trace.TraceID
+	httpRequest, ok := entry.Data["httprequest"].(*http.Request)
+	if ok {
+		span := trace.FromContext(httpRequest.Context())
+		traceId = span.SpanContext().TraceID
+		log.Printf("traceId from httprequest: %v", traceId)
+	}
+	ctx, ok := entry.Data["ctx"].(context.Context)
+	if ok {
+		span := trace.FromContext(ctx)
+		traceId = span.SpanContext().TraceID
+		log.Printf("traceId from ctx: %v", traceId)
+	}
 	sh.logger.Log(logging.Entry{
 		Severity: sh.translateLogrusLevel(entry.Level),
 		Payload: entry.Message,
 		SourceLocation: sh.extractCallerFields(entry),
+		Trace: "projects/demogeauxcommerce/traces/" + traceId.String(),
 	})
 	log.Print("after stackdriver_hook sendLogMessage call")
 	//for k, v := range entry.Data {

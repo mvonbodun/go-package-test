@@ -77,7 +77,8 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Warning: no product found: %v", err)
-		log.Warningf("No product was found: %v", err)
+		log.WithField("httprequest", r).
+			Warningf("No product was found: %v", err)
 	} else {
 		p, err := json.Marshal(product)
 		if err != nil {
@@ -106,7 +107,6 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Failed to get request dump: %v", err)
 	}
 	log.Debugf("Request header dump: %v", string(requestDump))
-	log.Debugf("Request context: %v", r.Context())
 	products, err := h1.getProducts(r.Context())
 	if err != nil {
 		fmt.Fprintf(w, "An error occured retrieving products: %v", err)

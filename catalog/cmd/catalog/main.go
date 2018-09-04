@@ -11,10 +11,21 @@ import (
 	"go.opencensus.io/trace"
 	"go.opencensus.io/stats/view"
 	"time"
+	"cloud.google.com/go/profiler"
 )
 
 
 func main() {
+
+	// Profiler initialization, best done as early as possible.
+	if err := profiler.Start(profiler.Config{
+		Service:        "catalogservice",
+		ServiceVersion: "1.0.0",
+		// ProjectID must be set if not running on GCP.
+		ProjectID: "demogeauxcommerce",
+	}); err != nil {
+		log.Warningf("Error initializing profiler: %v", err)
+	}
 
 	// Initialize logrus logging hooks
 	var err error
