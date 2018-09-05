@@ -44,11 +44,10 @@ Accept: application/json
 
 GET http://35.232.93.44/product
 Accept: application/json
-X-Forwarded-For: 35.232.93.44
 
 ###
 
-GET http://35.232.93.44/product/15
+GET http://35.232.93.44/product/20
 Accept: application/json
 
 ###

@@ -12,6 +12,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"time"
 	"cloud.google.com/go/profiler"
+	joonix "github.com/joonix/log"
 )
 
 
@@ -31,7 +32,9 @@ func main() {
 	var err error
 	// Initialize logrus standard logger.  This globally
 	// Log as JSON instead of the default ASCII formatter.
-	log.SetFormatter(&log.JSONFormatter{})
+	//log.SetFormatter(&log.JSONFormatter{})
+	// Log for fluentd formatter for Kubernetes or Google Cloud
+	log.SetFormatter(&joonix.FluentdFormatter{})
 
 	// Output to stdout instead of the default stderr
 	// Can be any io.Writer, see below for File example
