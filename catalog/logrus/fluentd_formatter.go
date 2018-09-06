@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 	"net/http"
+	"log"
 )
 
 // FluentdFormatter is similar to logrus.JSONFormatter but with log level that are recongnized
@@ -41,13 +42,13 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if ok {
 		span := trace.FromContext(httpRequest.Context())
 		traceId = span.SpanContext().TraceID
-		logrus.Debugf("traceId from httprequest: %v", traceId)
+		log.Printf("traceId from httprequest: %v", traceId)
 	}
 
 	data["time"] = entry.Time.Format(timestampFormat)
 	data["message"] = entry.Message
 	data["severity"] = entry.Level.String()
-	//data["httpRequest"] = httpRequest
+	data["httpRequest"] = httpRequest
 	data["trace"] = "projects/demogeauxcommerce/traces/" + traceId.String()
 
 	serialized, err := json.Marshal(data)

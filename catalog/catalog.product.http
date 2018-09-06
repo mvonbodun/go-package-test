@@ -12,7 +12,7 @@ Accept: application/json
 
 ###
 
-GET http://localhost:8080/product/20
+GET http://localhost:8080/product/10
 Accept: application/json
 
 ###
@@ -22,7 +22,7 @@ Accept: application/json
 
 ###
 
-DELETE http://localhost:8080/product/5
+DELETE http://localhost:8080/product/11
 Accept: application/json
 
 ###

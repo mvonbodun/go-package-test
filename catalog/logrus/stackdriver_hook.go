@@ -123,7 +123,7 @@ func (sh *StackdriverHook) Levels() []logrus.Level {
 // Fire writes the message to teh Stackdriver entry service.
 func (sh *StackdriverHook) Fire(entry *logrus.Entry) error {
 	if isError(entry) {
-		log.Print("Inside stackdriver hook isError")
+		//log.Print("Inside stackdriver hook isError")
 
 		// extract the stack trace from entry.Data
 		st, _ := entry.Data["stackTrace"].([]byte)
@@ -134,7 +134,7 @@ func (sh *StackdriverHook) Fire(entry *logrus.Entry) error {
 			Req: httpRequest,
 			Stack: st,
 		})
-		log.Print("Finished sending error")
+		//log.Print("Finished sending error")
 	} else {
 		sh.sendLogMessage(entry)
 	}
@@ -142,7 +142,7 @@ func (sh *StackdriverHook) Fire(entry *logrus.Entry) error {
 }
 
 func (sh *StackdriverHook) sendLogMessage(entry *logrus.Entry) {
-	log.Print("Inside stackdriver_hook sendLogMessage")
+	//log.Print("Inside stackdriver_hook sendLogMessage")
 	var traceId trace.TraceID
 	httpRequest, ok := entry.Data["httprequest"].(*http.Request)
 	if ok {
@@ -162,7 +162,7 @@ func (sh *StackdriverHook) sendLogMessage(entry *logrus.Entry) {
 		SourceLocation: sh.extractCallerFields(entry),
 		Trace: "projects/demogeauxcommerce/traces/" + traceId.String(),
 	})
-	log.Print("after stackdriver_hook sendLogMessage call")
+	//log.Print("after stackdriver_hook sendLogMessage call")
 	//for k, v := range entry.Data {
 	//	log.Printf("key: %v, value: %v, type: %v", k, v, reflect.TypeOf(v))
 	//}
