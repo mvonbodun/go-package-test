@@ -8,7 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 	"net/http"
-	"log"
+	"google.golang.org/api/logging/v2"
+	"golang.org/x/net/context"
 )
 
 // FluentdFormatter is similar to logrus.JSONFormatter but with log level that are recongnized
@@ -19,15 +20,35 @@ type FluentdFormatter struct {
 
 // Format the log entry. Implements logrus.Formatter.
 func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	data := make(logrus.Fields, len(entry.Data)+3)
+	// Make the slice 4 longer due to field clashes and traceid
+	data := make(logrus.Fields, len(entry.Data)+4)
+	var httpReq *logging.HttpRequest
+	var err error
 	for k, v := range entry.Data {
-		switch v := v.(type) {
+		switch x := v.(type) {
+		case string:
+			data[k] = x
+		case *http.Request:
+			httpReq = &logging.HttpRequest{
+				Referer:		x.Referer(),
+				RemoteIp:		x.RemoteAddr,
+				RequestMethod:	x.Method,
+				RequestUrl:		x.URL.String(),
+				UserAgent:		x.UserAgent(),
+			}
+			data[k] = httpReq
+			// Extract the traceId from the request
+			span := trace.FromContext(x.Context())
+			data["trace"] = span.SpanContext().TraceID.String()
+		case context.Context:
+			span := trace.FromContext(x)
+			data["trace"] = span.SpanContext().TraceID.String()
 		case error:
 			// Otherwise errors are ignored by `encoding/json`
 			// https://github.com/Sirupsen/logrus/issues/137
-			data[k] = v.Error()
+			data[k] = x.Error()
 		default:
-			data[k] = v
+			data[k] = fmt.Sprintf("%v", v)
 		}
 	}
 	prefixFieldClashes(data)
@@ -37,23 +58,13 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		timestampFormat = time.RFC3339Nano
 	}
 
-	var traceId trace.TraceID
-	httpRequest, ok := entry.Data["httprequest"].(*http.Request)
-	if ok {
-		span := trace.FromContext(httpRequest.Context())
-		traceId = span.SpanContext().TraceID
-		log.Printf("traceId from httprequest: %v", traceId)
-	}
-
 	data["time"] = entry.Time.Format(timestampFormat)
 	data["message"] = entry.Message
 	data["severity"] = entry.Level.String()
-	data["httpRequest"] = httpRequest
-	data["trace"] = "projects/demogeauxcommerce/traces/" + traceId.String()
 
 	serialized, err := json.Marshal(data)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal fields to JSON, %v", err)
+		return nil, fmt.Errorf("fluentd_formatter: Failed to marshal fields to JSON, %v", err)
 	}
 	return append(serialized, '\n'), nil
 }

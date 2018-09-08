@@ -12,7 +12,7 @@ Accept: application/json
 
 ###
 
-GET http://localhost:8080/product/10
+GET http://localhost:8080/product/20
 Accept: application/json
 
 ###

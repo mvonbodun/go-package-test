@@ -45,13 +45,13 @@ func main() {
 	// Add the stackdriver logging and error reporting hook
 	log.AddHook(logrus_stack.StandardHook())
 
-	var sdHook *logrus.StackdriverHook
-	// Add the Stackdriver Error reporting hook
-	sdHook, err = logrus.New("demogeauxcommerce", "catalog-log", "catalog-err")
-	if err != nil {
-		log.Error("unable to create hook for stackdriver error reporting.")
-	}
-	log.AddHook(sdHook)
+	//var sdHook *logrus.StackdriverHook
+	//// Add the Stackdriver Error reporting hook
+	//sdHook, err = logrus.New("demogeauxcommerce", "catalog-log", "catalog-err")
+	//if err != nil {
+	//	log.Error("unable to create hook for stackdriver error reporting.")
+	//}
+	//log.AddHook(sdHook)
 	// Finished initializing logrus.
 	log.Info("Finished initializing logrus.")
 
