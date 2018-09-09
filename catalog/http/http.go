@@ -71,13 +71,14 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	productId := vars["id"]
 	buf := make([]byte, 2048)
 	runtime.Stack(buf, true)
-	//log.WithField("httprequest", r).WithField("stackTrace", buf).
+	//log.WithField("httpRequest", r).WithField("stackTrace", buf).
 	//     Errorf("From the request productId=%v", productId)
 	product, err := h1.getProduct(r.Context(),productId)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Warning: no product found: %v", err)
-		log.WithField("httprequest", r).
+		//log.WithField("httpRequest", r).WithField("logging.googleapis.com/sourceLocation", buf).
+		log.WithField("httpRequest", r).
 			Warningf("No product was found: %v", err)
 	} else {
 		p, err := json.Marshal(product)

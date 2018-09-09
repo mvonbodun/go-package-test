@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"google.golang.org/api/logging/v2"
 	"golang.org/x/net/context"
+	"github.com/facebookgo/stack"
 )
 
 // FluentdFormatter is similar to logrus.JSONFormatter but with log level that are recongnized
@@ -20,9 +21,10 @@ type FluentdFormatter struct {
 
 // Format the log entry. Implements logrus.Formatter.
 func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	// Make the slice 4 longer due to field clashes and traceid
-	data := make(logrus.Fields, len(entry.Data)+4)
+	// Make the slice 5 longer due to field clashes, traceid, source location
+	data := make(logrus.Fields, len(entry.Data)+5)
 	var httpReq *logging.HttpRequest
+	var sourceLoc *logging.LogEntrySourceLocation
 	var err error
 	for k, v := range entry.Data {
 		switch x := v.(type) {
@@ -39,10 +41,17 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			data[k] = httpReq
 			// Extract the traceId from the request
 			span := trace.FromContext(x.Context())
-			data["trace"] = span.SpanContext().TraceID.String()
+			data["logging.googleapis.com/trace"] = "projects/demogeauxcommerce/traces/" + span.SpanContext().TraceID.String()
 		case context.Context:
 			span := trace.FromContext(x)
-			data["trace"] = span.SpanContext().TraceID.String()
+			data["logging.googleapis.com/trace"] = "projects/demogeauxcommerce/traces/" + span.SpanContext().TraceID.String()
+		case stack.Frame:
+			sourceLoc = &logging.LogEntrySourceLocation{
+				File: x.File,
+				Line: int64(x.Line),
+				Function: x.Name,
+			}
+			data[k] = sourceLoc
 		case error:
 			// Otherwise errors are ignored by `encoding/json`
 			// https://github.com/Sirupsen/logrus/issues/137
