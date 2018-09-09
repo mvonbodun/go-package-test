@@ -38,20 +38,22 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 				RequestUrl:		x.URL.String(),
 				UserAgent:		x.UserAgent(),
 			}
-			data[k] = httpReq
+			data["httpRequest"] = httpReq
 			// Extract the traceId from the request
 			span := trace.FromContext(x.Context())
 			data["logging.googleapis.com/trace"] = "projects/demogeauxcommerce/traces/" + span.SpanContext().TraceID.String()
+			data["logging.googleapis.com/spanId"] = span.SpanContext().SpanID.String()
 		case context.Context:
 			span := trace.FromContext(x)
 			data["logging.googleapis.com/trace"] = "projects/demogeauxcommerce/traces/" + span.SpanContext().TraceID.String()
+			data["logging.googleapis.com/spanId"] = span.SpanContext().SpanID.String()
 		case stack.Frame:
 			sourceLoc = &logging.LogEntrySourceLocation{
 				File: x.File,
 				Line: int64(x.Line),
 				Function: x.Name,
 			}
-			data[k] = sourceLoc
+			data["logging.googleapis.com/sourceLocation"] = sourceLoc
 		case error:
 			// Otherwise errors are ignored by `encoding/json`
 			// https://github.com/Sirupsen/logrus/issues/137
