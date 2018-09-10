@@ -17,7 +17,8 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	c := &Client{}
+	c := &Client{
+	}
 	c.productService.client = c
 	return c
 }
@@ -40,6 +41,11 @@ func (c *Client) Open() error {
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("Could not ping the catalog database: %v\n", err)
+	}
+	// Prepare the SQL statements
+	err = c.productService.prepareSqlStmts()
+	if err != nil {
+		log.Errorf("mysql client: Failed to prepare sql statements: %v", err)
 	}
 	return err
 }

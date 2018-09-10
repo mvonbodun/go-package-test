@@ -43,6 +43,7 @@ func main() {
 	log.SetLevel(log.DebugLevel)
 
 	// Add the stackdriver logging and error reporting hook
+	//
 	log.AddHook(logrus_stack.StandardHook())
 
 	//var sdHook *logrus.StackdriverHook
