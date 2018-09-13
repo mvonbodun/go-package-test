@@ -47,7 +47,7 @@ Accept: application/json
 
 ###
 
-GET http://35.232.93.44/product/20
+GET http://35.232.93.44/product/10
 Accept: application/json
 
 ###
@@ -55,19 +55,11 @@ Accept: application/json
 POST http://35.232.93.44/product
 Accept: application/json
 
-{  "productCode": "prod94949", "shortDesc": "Short desc for prod 5", "longDesc": "Long desc for prod 5" }
+{  "productCode": "prodqwqw", "shortDesc": "Short desc for prod 8", "longDesc": "Long desc for prod 8" }
 
 ###
 
-GET http://146.148.43.51/error
+DELETE http://35.232.93.44/product/16
 Accept: application/json
-
-###
-
-GET http://localhost:6060/foo
-
-###
-
-GET http://localhost:8080/hello
 
 ###

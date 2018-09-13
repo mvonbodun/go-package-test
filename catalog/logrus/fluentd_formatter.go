@@ -3,6 +3,7 @@ package logrus
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,16 +12,36 @@ import (
 	"google.golang.org/api/logging/v2"
 	"golang.org/x/net/context"
 	"github.com/facebookgo/stack"
+	"cloud.google.com/go/compute/metadata"
 )
 
 // FluentdFormatter is similar to logrus.JSONFormatter but with log level that are recongnized
 // by kubernetes fluentd.
 type FluentdFormatter struct {
 	TimestampFormat string
+	TracePrefix 	string
 }
+
+const (
+	// Define constants for the Google json fields read by fluentd
+	// See: https://cloud.google.com/logging/docs/agent/configuration#special_fields_in_structured_payloads
+	httpRequestField = "httpRequest"
+	traceField       = "logging.googleapis.com/trace"
+	spanIdField      = "logging.googleapis.com/spanId"
+	sourceLocField   = "logging.googleapis.com/sourceLocation"
+)
 
 // Format the log entry. Implements logrus.Formatter.
 func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	// Setup the trace prefix
+	if f.TracePrefix == "" {
+		p, err := metadata.ProjectID()
+		if err != nil {
+			p = "default"
+			log.Printf("metadata: error retrieving ProjectID: %v", err)
+		}
+		f.TracePrefix = "projects/" + p + "/traces/"
+	}
 	// Make the slice 5 longer due to field clashes, traceid, source location
 	data := make(logrus.Fields, len(entry.Data)+5)
 	var httpReq *logging.HttpRequest
@@ -38,22 +59,22 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 				RequestUrl:		x.URL.String(),
 				UserAgent:		x.UserAgent(),
 			}
-			data["httpRequest"] = httpReq
+			data[httpRequestField] = httpReq
 			// Extract the traceId from the request
 			span := trace.FromContext(x.Context())
-			data["logging.googleapis.com/trace"] = "projects/demogeauxcommerce/traces/" + span.SpanContext().TraceID.String()
-			data["logging.googleapis.com/spanId"] = span.SpanContext().SpanID.String()
+			data[traceField] = f.TracePrefix + span.SpanContext().TraceID.String()
+			data[spanIdField] = span.SpanContext().SpanID.String()
 		case context.Context:
 			span := trace.FromContext(x)
-			data["logging.googleapis.com/trace"] = "projects/demogeauxcommerce/traces/" + span.SpanContext().TraceID.String()
-			data["logging.googleapis.com/spanId"] = span.SpanContext().SpanID.String()
+			data[traceField] = f.TracePrefix + span.SpanContext().TraceID.String()
+			data[spanIdField] = span.SpanContext().SpanID.String()
 		case stack.Frame:
 			sourceLoc = &logging.LogEntrySourceLocation{
 				File: x.File,
 				Line: int64(x.Line),
 				Function: x.Name,
 			}
-			data["logging.googleapis.com/sourceLocation"] = sourceLoc
+			data[sourceLocField] = sourceLoc
 		case error:
 			// Otherwise errors are ignored by `encoding/json`
 			// https://github.com/Sirupsen/logrus/issues/137

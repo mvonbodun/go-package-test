@@ -87,3 +87,11 @@ func main() {
 	// Register the handlers and Start the web server
 	h.ListenAndServe()
 }
+
+func envString(env, fallback string) string {
+	e := os.Getenv(env)
+	if e == "" {
+		return fallback
+	}
+	return e
+}
