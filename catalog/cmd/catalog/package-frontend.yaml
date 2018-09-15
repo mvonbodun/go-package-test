@@ -25,6 +25,8 @@ spec:
         env:
         - name: MYSQL_DB_HOST
           value: 127.0.0.1:3306
+        - name: USE_STACKDRIVER
+          value: TRUE
         # These secrets are required to start the pod.
         # [START cloudsql_secrets]
         - name: MYSQL_DB_USER
