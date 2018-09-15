@@ -6,20 +6,20 @@ import (
 	"log"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
+	"github.com/facebookgo/stack"
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
-	"net/http"
-	"google.golang.org/api/logging/v2"
 	"golang.org/x/net/context"
-	"github.com/facebookgo/stack"
-	"cloud.google.com/go/compute/metadata"
+	"google.golang.org/api/logging/v2"
+	"net/http"
 )
 
 // FluentdFormatter is similar to logrus.JSONFormatter but with log level that are recongnized
 // by kubernetes fluentd.
 type FluentdFormatter struct {
 	TimestampFormat string
-	TracePrefix 	string
+	TracePrefix     string
 }
 
 const (
@@ -33,7 +33,7 @@ const (
 
 // Format the log entry. Implements logrus.Formatter.
 func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	// Setup the trace prefix
+	// Setup the trace prefix.  Will set the prefix to "default" if not running in GCP.
 	if f.TracePrefix == "" {
 		p, err := metadata.ProjectID()
 		if err != nil {
@@ -53,11 +53,11 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			data[k] = x
 		case *http.Request:
 			httpReq = &logging.HttpRequest{
-				Referer:		x.Referer(),
-				RemoteIp:		x.RemoteAddr,
-				RequestMethod:	x.Method,
-				RequestUrl:		x.URL.String(),
-				UserAgent:		x.UserAgent(),
+				Referer:       x.Referer(),
+				RemoteIp:      x.RemoteAddr,
+				RequestMethod: x.Method,
+				RequestUrl:    x.URL.String(),
+				UserAgent:     x.UserAgent(),
 			}
 			data[httpRequestField] = httpReq
 			// Extract the traceId from the request
@@ -70,8 +70,8 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			data[spanIdField] = span.SpanContext().SpanID.String()
 		case stack.Frame:
 			sourceLoc = &logging.LogEntrySourceLocation{
-				File: x.File,
-				Line: int64(x.Line),
+				File:     x.File,
+				Line:     int64(x.Line),
 				Function: x.Name,
 			}
 			data[sourceLocField] = sourceLoc
@@ -114,4 +114,3 @@ func prefixFieldClashes(data logrus.Fields) {
 		data["fields.level"] = l
 	}
 }
-

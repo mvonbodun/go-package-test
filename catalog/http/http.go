@@ -11,6 +11,7 @@ import (
 	"os"
 	"go.opencensus.io/plugin/ochttp"
 	"net/http/httputil"
+	"runtime"
 )
 
 type Handler struct {
@@ -69,8 +70,10 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			fmt.Fprintf(w, "Warning: no product found: %v", err)
-			log.WithField("httpRequest", r).
-				Warningf("No product was found: %v", err)
+			buf := make([]byte, 2048)
+			runtime.Stack(buf, true)
+			log.WithField("httpRequest", r).WithField("stackTrace", buf).
+				Errorf("No product was found: %v", err)
 		} else {
 			p, err := json.Marshal(product)
 			if err != nil {

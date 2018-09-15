@@ -12,26 +12,25 @@ import (
 	"go.opencensus.io/stats/view"
 	"time"
 	"cloud.google.com/go/profiler"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/net/context"
 )
 
+const (
+	production = "PRODUCTION"
+)
 
 func main() {
-
-	// Profiler initialization, best done as early as possible.
-	if err := profiler.Start(profiler.Config{
-		Service:        "catalogservice",
-		ServiceVersion: "1.0.0",
-		// ProjectID must be set if not running on GCP.
-		ProjectID: "demogeauxcommerce",
-	}); err != nil {
-		log.Warningf("Error initializing profiler: %v", err)
-	}
+	// Get the environment the program is executing in.
+	// PRODUCTION, PERFORMANCE represent environment with reduced tracing and logging.
+	environment := envString("ENVIRONMENT", "DEVELOPMENT")
+	useStackdriver := envString("USE_STACKDRIVER", "FALSE")
 
 	// Initialize logrus logging hooks
 	var err error
 	// Initialize logrus standard logger.  This globally
 	// Log as JSON instead of the default ASCII formatter.
-	//log.SetFormatter(&log.JSONFormatter{})
+	// log.SetFormatter(&log.JSONFormatter{})
 	// Log for fluentd formatter for Kubernetes or Google Cloud
 	log.SetFormatter(&logrus.FluentdFormatter{})
 
@@ -42,31 +41,55 @@ func main() {
 	// Only log the warning severity or above.
 	log.SetLevel(log.DebugLevel)
 
-	// Add the stackdriver logging and error reporting hook
-	//
+	// Add the logrus stack hook to generate the source location when the log is written.
 	log.AddHook(logrus_stack.StandardHook())
-
-	//var sdHook *logrus.StackdriverHook
-	//// Add the Stackdriver Error reporting hook
-	//sdHook, err = logrus.New("demogeauxcommerce", "catalog-log", "catalog-err")
-	//if err != nil {
-	//	log.Error("unable to create hook for stackdriver error reporting.")
-	//}
-	//log.AddHook(sdHook)
-	// Finished initializing logrus.
 	log.Info("Finished initializing logrus.")
 
-	// Setup Stackdriver trace exporter
-	exporter, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID: "demogeauxcommerce",
-	})
-	if err != nil {
-		log.Warningf("Unable to create stackdriver exporter: %v", err)
+	// If useStackdriver is set to "TRUE", enable the various stackdriver components
+	if useStackdriver == "TRUE" {
+		ctx := context.Background()
+		// Get the Application Default Credentials
+		creds, err := google.FindDefaultCredentials(ctx, defaultAuthScopes()...)
+		if err != nil {
+			log.Fatalf("stackdriver - failed to get default credentials: %v", err)
+		}
+		if creds.ProjectID == "" {
+			log.Fatal("stackdriver: no project found with application default credentials")
+		}
+
+		// Profiler initialization, best done as early as possible.
+		if err := profiler.Start(profiler.Config{
+			Service:        "catalogservice",
+			ServiceVersion: "1.0.0",
+			// ProjectID must be set if not running on GCP.
+			ProjectID: creds.ProjectID,
+		}); err != nil {
+			log.Warningf("Error initializing profiler: %v", err)
+		}
+
+		// Setup Stackdriver trace exporter
+		exporter, err := stackdriver.NewExporter(stackdriver.Options{
+			ProjectID: creds.ProjectID,
+		})
+		if err != nil {
+			log.Warningf("Unable to create stackdriver exporter: %v", err)
+		}
+		trace.RegisterExporter(exporter)
+		view.RegisterExporter(exporter)
+		// Only set trace to Always sample if non-production environment,
+		// otherwise open census samples on a much less frequent basis
+		if environment != production {
+			trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+		}
+		view.SetReportingPeriod(1 * time.Second)
+
+		// Add the Stackdriver Error reporting logrus hook
+		sdHook, err := logrus.New(creds.ProjectID, "catalog-err")
+		if err != nil {
+			log.Errorf("unable to create hook for stackdriver error reporting: %v", err)
+		}
+		log.AddHook(sdHook)
 	}
-	trace.RegisterExporter(exporter)
-	view.RegisterExporter(exporter)
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
-	view.SetReportingPeriod(1 * time.Second)
 
 	// Connect to the database
 	client := mysql.NewClient()
@@ -88,6 +111,15 @@ func main() {
 	h.ListenAndServe()
 }
 
+// DefaultAuthScopes reports the default set of authentication scopes to use with this application.
+func defaultAuthScopes() []string {
+	return []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/trace.append",
+	}
+}
+
+// envString retrieves an environment variable from the os, or uses the fallack if not set.
 func envString(env, fallback string) string {
 	e := os.Getenv(env)
 	if e == "" {
