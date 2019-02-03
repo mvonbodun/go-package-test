@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"github.com/go-sql-driver/mysql"
 	"github.com/mvonbodun/go-package-test/catalog"
 	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
@@ -24,23 +25,33 @@ func NewClient() *Client {
 }
 
 // Open opens the connection to the MySql database
-func (c *Client) Open() error {
+func (c *Client) Open(config MySQLConfig) error {
 	log.Debug("Before opening the database")
+	// Check database and table exist.  If not, create them.
+	if err := config.ensureTableExists(); err != nil {
+		return err
+	}
 	// Setup the OpenCensus database tracing
 	ocDriverName, err := ocsql.Register("mysql", ocsql.WithAllTraceOptions())
 	if err != nil {
-		log.Fatalf("Failed to register the ocsql driver: %v", err)
+		log.Errorf("Failed to register the ocsql driver: %v", err)
 	}
-	db, err := sql.Open(ocDriverName, "root:passw0rd@/catalog?charset=utf8")
+	mc := mysql.NewConfig()
+	mc.User = config.Username
+	mc.Passwd = config.Password
+	mc.Addr = config.Host
+	mc.Params = map[string]string{"charset": "utf8"}
+	mc.DBName = "catalog"
+	db, err := sql.Open(ocDriverName, mc.FormatDSN())
 	if err != nil {
-		log.Fatalf("Failed to open the catalog Database: %v",err)
+		log.Errorf("Failed to open the catalog Database: %v",err)
 	}
 	c.db = db
 	// Ping the database
 	log.Debug("Before pinging mysql catalog database.")
 	err = db.Ping()
 	if err != nil {
-		log.Fatalf("Could not ping the catalog database: %v\n", err)
+		log.Errorf("Could not ping the catalog database: %v\n", err)
 	}
 	// Prepare the SQL statements
 	err = c.productService.prepareSqlStmts()

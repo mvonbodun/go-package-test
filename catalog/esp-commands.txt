@@ -1,0 +1,11 @@
+sudo docker run \
+    --detach \
+    --name="esp" \
+    --publish=8082:8082 \
+    --volume=$HOME/Downloads:/esp \
+    gcr.io/endpoints-release/endpoints-runtime:1 \
+    --service=catalog-api.endpoints.demogeauxcommerce.cloud.goog \
+    --rollout_strategy=managed \
+    --http_port=8082 \
+    --backend=localhost:8080 \
+    --service_account_key=/esp/service-account-creds.json

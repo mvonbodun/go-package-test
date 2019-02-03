@@ -5,24 +5,44 @@
 # * 'ptr' and 'ptrp' create a POST request with a simple or parameter-like body;
 # * 'mptr' and 'fptr' create a POST request to submit a form with a text or file field (multipart/form-data);
 
+POST http://35.232.111.65:80/echo
+Accept: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlJrUTRPVFEzTVRVeVEwWTRPREk1TlVRd1JVRXhSRE5GUmtSQlFrWkdNVVEzTkRnME0wVkJOQSJ9.eyJpc3MiOiJodHRwczovL2dlYXV4Y29tbWVyY2UuYXV0aDAuY29tLyIsInN1YiI6ImRZQmdEY3dnNFpSam5yaHN6RXJ0bGViSU5ieVM5akM4QGNsaWVudHMiLCJhdWQiOiJodHRwOi8vZ29vZ2xlX2FwaSIsImlhdCI6MTU0NjcwNTA0NiwiZXhwIjoxNTQ2NzkxNDQ2LCJhenAiOiJkWUJnRGN3ZzRaUmpucmhzekVydGxlYklOYnlTOWpDOCIsImd0eSI6ImNsaWVudC1jcmVkZW50aWFscyJ9.LzV1ey815If8YJFfntLVjMSdef4drLMPHVIwOwO9yIe3fz2GoVGPn_Mjs_AwGKIQF0tsW7qWgJtowT74DuIRv4bYtKKXEJ3wuEBTsWMForh2r_t7O2luIrOWrNH0piOyGBT17b7x4Q6sCdn8mkthPySd0K1f9ROSdsxq7hDnjtZn8AKYN814kIF1LZotZEOEIJGt6teI9JlvX6JBeYVGIg4sqw7yNfo1R4qsbm2BRIAJn0UOmsFGxs6OkLgqG7YJslgzKbCDVw7rdRoBQrqJc8zDbbnQtu1kzhXHb0ZNLQrt2Tq5cFm_6KDowFLYUiifxL23IxuYV81dTgP8ajNTDA
+
+{ "message": "Hello World Michael" }
+
+###
+
 POST http://localhost:8080/product
 Accept: application/json
 
-{  "productCode": "prodvbvb", "shortDesc": "Short desc for prod 7", "longDesc": "Long desc for prod 7" }
+{  "productCode": "prod16", "shortDesc": "Short desc for prod 16", "longDesc": "Long desc for prod 16" }
 
 ###
 
-GET http://localhost:8080/product/22
+POST http://localhost:8080/product
+Accept: application/json
+
+{   }
+
+###
+
+GET http://localhost:8080/product/15
 Accept: application/json
 
 ###
 
-GET http://localhost:8080/product
+GET http://localhost:8080/products
 Accept: application/json
 
 ###
 
-DELETE http://localhost:8080/product/14
+GET http://localhost:8082/products
+Accept: application/json
+
+###
+
+DELETE http://localhost:8080/product/16
 Accept: application/json
 
 ###
@@ -42,12 +62,12 @@ Accept: application/json
 
 ###
 
-GET http://35.232.93.44/product
+GET http://35.232.93.44/products
 Accept: application/json
 
 ###
 
-GET http://35.232.93.44/product/20
+GET http://35.232.93.44/product/22
 Accept: application/json
 
 ###

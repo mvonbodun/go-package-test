@@ -1,38 +1,31 @@
 package http
 
 import (
-	"github.com/mvonbodun/go-package-test/catalog"
-	"net/http"
-	"fmt"
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/mvonbodun/go-package-test/catalog"
+	log "github.com/sirupsen/logrus"
+	"net/http"
 	"os"
-	"go.opencensus.io/plugin/ochttp"
-	"net/http/httputil"
-	"runtime"
 )
 
 type Handler struct {
 	ProductService catalog.ProductService
-	Handler *Handler
+	Handler        *Handler
+	Router         *mux.Router
 }
 
 // NewHandler creates a new Handler.
 func NewHandler() *Handler {
 	h := &Handler{}
+	h.Router = h.registerHandlers()
 	return h
 }
 
-// StartWebServer starts the web server
-func (h *Handler) ListenAndServe() {
-	h.registerHandlers()
-	log.Info(http.ListenAndServe(":8080", &ochttp.Handler{}))
-}
-
 // registerHandlers registers the handlers used to respond to requests.
-func (h *Handler) registerHandlers() {
+func (h *Handler) registerHandlers() *mux.Router {
 	// Use gorilla/mux for rich routing
 	r := mux.NewRouter()
 	//  All API calls leverage application/json
@@ -41,7 +34,7 @@ func (h *Handler) registerHandlers() {
 	s.Methods("GET").Path("/product/{id:[0-9]+}").
 		HandlerFunc(h.GetProduct)
 
-	s.Methods("GET").Path("/product").
+	s.Methods("GET").Path("/products").
 		HandlerFunc(h.GetProducts)
 
 	s.Methods("POST").Path("/product").
@@ -50,65 +43,39 @@ func (h *Handler) registerHandlers() {
 	s.Methods("DELETE").Path("/product/{id:[0-9]+}").
 		HandlerFunc(h.DeleteProduct)
 
-	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, r))
+	http.Handle("/", handlers.CompressHandler(handlers.CombinedLoggingHandler(os.Stdout, r)))
+
+	return s
 }
+
+//func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//	// Do nothing
+//	log.Debug("http: Entered ServerHTTP method")
+//	//s := h.registerHandlers()
+//	//s.ServeHTTP(w, r)
+//	h.Router.ServeHTTP(w, r)
+//}
 
 // GetProduct retrieves a single product from the database.
 func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	// Get the variables from the request
 	vars := mux.Vars(r)
 	productId := vars["id"]
-	if len(productId) == 0 {
-		log.WithField("httpRequest", r).
-			Warning("Error productId not passed in.")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		fmt.Fprint(w,"productId not passed in.")
+	product, err := h.ProductService.Product(r.Context(), productId)
+	if err != nil {
+		respondWithError(w, r, http.StatusNotFound, "productId: "+productId+" was not found.")
 	} else {
-		product, err := h.ProductService.Product(r.Context(), productId)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, "Warning: no product found: %v", err)
-			buf := make([]byte, 2048)
-			runtime.Stack(buf, true)
-			log.WithField("httpRequest", r).WithField("stackTrace", buf).
-				Errorf("No product was found: %v", err)
-		} else {
-			p, err := json.Marshal(product)
-			if err != nil {
-				log.WithField("httpRequest", r).
-					Errorf("Error marshalling product: %v", err)
-			}
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, string(p))
-		}
+		respondWithJson(w, r, http.StatusOK, product)
 	}
 }
 
 // GetProducts retrieves all of the products from the database.
 func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
-	// Print the request header
-	requestDump, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		log.WithField("httpRequest", r).
-			Errorf("Failed to get request dump: %v", err)
-	} else {
-		log.WithField("httpRequest", r).
-			Debugf("Request header dump: %v", string(requestDump))
-	}
 	products, err := h.ProductService.Products(r.Context())
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		fmt.Fprintf(w, "An error occured retrieving products: %v", err)
+		respondWithError(w, r, http.StatusNotFound, fmt.Sprintf("An error occured retrieving products: %v", err))
 	} else {
-		p, err := json.Marshal(products)
-		if err != nil {
-			log.WithField("httpRequest", r).
-				Errorf("error marshalling: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		fmt.Fprintf(w, string(p))
+		respondWithJson(w, r, http.StatusOK, products)
 	}
 }
 
@@ -116,19 +83,16 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) AddProduct(w http.ResponseWriter, r *http.Request) {
 	product := &catalog.Product{}
 	if err := json.NewDecoder(r.Body).Decode(product); err != nil {
-		log.WithField("httpRequest", r).
-			Errorf("Error decoding during AddProduct: %v", err)
+		respondWithError(w, r, http.StatusBadRequest, fmt.Sprintf("Error decoding Json during AddProduct: %v", err))
+		return
 	}
 	log.Debugf("The body that was posted for ProductCode: %v", product.ProductCode)
 	// Add the catalog to the database
 	err := h.ProductService.CreateProduct(r.Context(), product)
 	if err != nil {
-		log.WithField("httpRequest", r).
-			Errorf("Error adding product: %v", err)
+		respondWithError(w, r, http.StatusBadRequest, fmt.Sprintf("Error adding product: %v", err))
 	} else {
-		w.WriteHeader(http.StatusCreated)
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		fmt.Fprintf(w, "Successfully added product to DB.")
+		respondWithJson(w, r, http.StatusCreated, product)
 	}
 }
 
@@ -137,23 +101,26 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	// Get the variables from the request
 	vars := mux.Vars(r)
 	productId := vars["id"]
-	if len(productId) == 0 {
-		log.WithField("httpRequest", r).
-			Warning("Error productId not passed in.")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		fmt.Fprint(w,"productId not passed in.")
+	log.Debugf("DeleteProduct(): From the request productId=%v", productId)
+	err := h.ProductService.DeleteProduct(r.Context(), productId)
+	if err != nil {
+		respondWithError(w, r, http.StatusNotFound, fmt.Sprintf("No product was found during delete: %v", err))
 	} else {
-		log.Debugf("From the request productId=%v", productId)
-		err := h.ProductService.DeleteProduct(r.Context(), productId)
-		if err != nil {
-			fmt.Fprintf(w, "Error when deleting product with id: %v", productId)
-			log.WithField("httpRequest", r).
-				Warningf("No product was found during delete: %v", err)
-		} else {
-			w.WriteHeader(http.StatusNoContent)
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, "Product with id: %v was deleted.", productId)
-		}
+		respondWithJson(w, r, http.StatusOK, map[string]string{"result": "success"})
 	}
+}
+
+func respondWithJson(w http.ResponseWriter, r *http.Request, code int, payload interface{}) {
+	response, err := json.Marshal(payload)
+	if err != nil {
+		log.WithField("httpRequest", r).
+			Errorf("Error marshalling Json: %v", err)
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	w.Write(response)
+}
+
+func respondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {
+	respondWithJson(w, r, code, map[string]string{"error": message})
 }

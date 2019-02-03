@@ -1,0 +1,102 @@
+# [START swagger]
+swagger: "2.0"
+info:
+  description: "GeauxCommerce Catalog API."
+  title: "Catalog API"
+  version: "0.0.1"
+host: "catalog-api.endpoints.demogeauxcommerce.cloud.goog"
+# [END swagger]
+consumes:
+- "application/json"
+produces:
+- "application/json"
+schemes:
+# Uncomment the next line if you configure SSL for this API.
+#- "https"
+- "http"
+paths:
+  "/product":
+    post:
+      tags:
+      - "product"
+      description: "Adds a product to the database."
+      operationId: "addProduct"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        201:
+          description: "Successful operation. Product with productId."
+          schema:
+            $ref: "#/definitions/product"
+        400:
+          description: "Error adding product"
+      parameters:
+      - description: "Product to create"
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: "#/definitions/product"
+      security:
+      - auth0_jwk: []
+  "/products":
+    get:
+      tags:
+      - "product"
+      description: "Gets a list of products from the database."
+      operationId: "getProduct"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successful operation. Returned a list of products."
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/product"
+  "/auth/info/auth0":
+    get:
+      description: "Returns the requests' authentication information."
+      operationId: "auth_info_auth0_jwk"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Authentication info."
+          schema:
+            $ref: "#/definitions/authInfoResponse"
+      security:
+      - auth0_jwk: []
+definitions:
+  product:
+    type: "object"
+    properties:
+      productId:
+        type: "string"
+      productCode:
+        type: "string"
+      shortDesc:
+        type: "string"
+      longDesc:
+        type: "string"
+  authInfoResponse:
+    properties:
+      id:
+        type: "string"
+      email:
+        type: "string"
+# This section requires all requests to any path to require an API key.
+securityDefinitions:
+  auth0_jwk:
+    # Update YOUR-ACCOUNT-NAME with your Auth0 account name.
+    authorizationUrl: "https://geauxcommerce.auth0.com/authorize"
+    flow: "implicit"
+    type: "oauth2"
+    x-google-issuer: "https://geauxcommerce.auth0.com/"
+    # Update this with your service account's email address.
+    x-google-jwks_uri: "https://geauxcommerce.auth0.com/.well-known/jwks.json"
+    # Replace with your client ID, found in the Auth0 console.
+    x-google-audiences: "http://google_api"
+

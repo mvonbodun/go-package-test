@@ -15,7 +15,7 @@ import (
 	"net/http"
 )
 
-// FluentdFormatter is similar to logrus.JSONFormatter but with log level that are recongnized
+// FluentdFormatter is similar to logrus.JSONFormatter but with log level that are recognized
 // by kubernetes fluentd.
 type FluentdFormatter struct {
 	TimestampFormat string
@@ -38,7 +38,7 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		p, err := metadata.ProjectID()
 		if err != nil {
 			p = "default"
-			log.Printf("metadata: error retrieving ProjectID: %v", err)
+			log.Printf("fluentd_formatter: error retrieving ProjectID: %v", err)
 		}
 		f.TracePrefix = "projects/" + p + "/traces/"
 	}
@@ -98,6 +98,7 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fluentd_formatter: Failed to marshal fields to JSON, %v", err)
 	}
+	log.Print("fluentd_formatter: Finished format.")
 	return append(serialized, '\n'), nil
 }
 

@@ -74,6 +74,7 @@ func (sh *StackdriverHook) Levels() []logrus.Level {
 func (sh *StackdriverHook) Fire(entry *logrus.Entry) error {
 	// extract the stack trace from entry.Data
 	st, _ := entry.Data["stackTrace"].([]byte)
+	log.Print("stackdriver_hook: just finished getting stackTrace")
 	// extract the request data
 	httpRequest, _ := entry.Data["httpRequest"].(*http.Request)
 	sh.errorClient.Report(errorreporting.Entry{
@@ -81,6 +82,9 @@ func (sh *StackdriverHook) Fire(entry *logrus.Entry) error {
 		Req: httpRequest,
 		Stack: st,
 	})
+	// Remove the binary stacktrace from the logrus.Entry so it is not
+	// written out to by the fluentd formatter
+	delete(entry.Data, "stackTrace")
 	return nil
 }
 
