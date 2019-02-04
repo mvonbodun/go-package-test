@@ -173,8 +173,10 @@ func (config MySQLConfig) ensureTableExists() error {
 	mc := mysql.NewConfig()
 	mc.User = config.Username
 	mc.Passwd = config.Password
+	mc.Net = "tcp"
 	mc.Addr = config.Host
 	mc.Params = map[string]string{"charset": "utf8"}
+	log.Infof("ensureTableExists formatDSN: %v", mc.FormatDSN())
 	conn, err := sql.Open("mysql", mc.FormatDSN())
 	if err != nil {
 		return fmt.Errorf("mysql: could not get a connection: %v", err)
