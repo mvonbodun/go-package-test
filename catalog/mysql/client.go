@@ -43,6 +43,7 @@ func (c *Client) Open(config MySQLConfig) error {
 	mc.Addr = config.Host
 	mc.Params = map[string]string{"charset": "utf8"}
 	mc.DBName = "catalog"
+	log.Infof("formattedDSN: %v", mc.FormatDSN())
 	db, err := sql.Open(ocDriverName, mc.FormatDSN())
 	if err != nil {
 		log.Errorf("Failed to open the catalog Database: %v",err)
