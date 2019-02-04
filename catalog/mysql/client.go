@@ -39,6 +39,7 @@ func (c *Client) Open(config MySQLConfig) error {
 	mc := mysql.NewConfig()
 	mc.User = config.Username
 	mc.Passwd = config.Password
+	mc.Net = "tcp"
 	mc.Addr = config.Host
 	mc.Params = map[string]string{"charset": "utf8"}
 	mc.DBName = "catalog"

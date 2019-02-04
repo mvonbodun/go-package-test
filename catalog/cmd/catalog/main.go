@@ -103,6 +103,7 @@ func main() {
 	host := os.Getenv(mysqlDBHost)
 	user := os.Getenv(mysqlDBUser)
 	password := os.Getenv(mysqlDBPassword)
+	log.Infof("host: %v", host)
 
 	// Connect to the database
 	client := mysql.NewClient()
