@@ -41,12 +41,78 @@ paths:
           $ref: "#/definitions/product"
       security:
       - auth0_jwk: []
+    put:
+      tags:
+      - "product"
+      description: "Updates a product in the database."
+      operationId: "updateProduct"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        202:
+          description: "Successful operation. Product updated."
+          schema:
+            $ref: "#/definitions/product"
+        400:
+          description: "Error updating product"
+      parameters:
+      - description: "Product to update"
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: "#/definitions/product"
+      security:
+      - auth0_jwk: []
+  "/product/{productId}":
+    get:
+      tags:
+      - "product"
+      description: "Gets a product from the database based on productId."
+      operationId: "getProduct"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successful operation. Returned a list of products."
+          schema:
+            $ref: "#/definitions/product"
+        404:
+          description: "Product not found."
+      parameters:
+      - description: "Product to retrieve."
+        in: "path"
+        name: productId
+        required: true
+        type: "string"
+    delete:
+      tags:
+      - "product"
+      description: "Deletes a product from the database based on productId."
+      operationId: "deleteProduct"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successful operation. Deleted product."
+        404:
+          description: "Product not found."
+      parameters:
+      - description: "Product to retrieve."
+        in: "path"
+        name: productId
+        required: true
+        type: "string"
+      security:
+      - auth0_jwk: []
   "/products":
     get:
       tags:
       - "product"
       description: "Gets a list of products from the database."
-      operationId: "getProduct"
+      operationId: "getProducts"
       produces:
       - "application/json"
       responses:
@@ -56,6 +122,9 @@ paths:
             type: array
             items:
               $ref: "#/definitions/product"
+        404:
+          description: "Product not found."
+
   "/auth/info/auth0":
     get:
       description: "Returns the requests' authentication information."

@@ -23,5 +23,6 @@ type ProductService interface {
 	Product(ctx context.Context, id string) (*Product, error)
 	Products(ctx context.Context) ([]*Product, error)
 	CreateProduct(ctx context.Context, p *Product) error
+	UpdateProduct(ctx context.Context, p *Product) error
 	DeleteProduct(ctx context.Context, id string) error
 }

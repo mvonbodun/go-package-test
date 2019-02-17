@@ -40,6 +40,9 @@ func (h *Handler) registerHandlers() *mux.Router {
 	s.Methods("POST").Path("/product").
 		HandlerFunc(h.AddProduct)
 
+	s.Methods("PUT").Path("/product").
+		HandlerFunc(h.UpdateProduct)
+
 	s.Methods("DELETE").Path("/product/{id:[0-9]+}").
 		HandlerFunc(h.DeleteProduct)
 
@@ -87,12 +90,29 @@ func (h *Handler) AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Debugf("The body that was posted for ProductCode: %v", product.ProductCode)
-	// Add the catalog to the database
+	// Add the product to the database
 	err := h.ProductService.CreateProduct(r.Context(), product)
 	if err != nil {
 		respondWithError(w, r, http.StatusBadRequest, fmt.Sprintf("Error adding product: %v", err))
 	} else {
 		respondWithJson(w, r, http.StatusCreated, product)
+	}
+}
+
+// UpdateProduct updates a product from the database.
+func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	product := &catalog.Product{}
+	if err := json.NewDecoder(r.Body).Decode(product); err != nil {
+		respondWithError(w, r, http.StatusBadRequest, fmt.Sprintf("Error decoding Json during AddProduct: %v", err))
+		return
+	}
+	log.Debugf("The body that was PUT for ProductCode: %v", product.ProductCode)
+	// Update the product to the database
+	err := h.ProductService.UpdateProduct(r.Context(), product)
+	if err != nil {
+		respondWithError(w, r, http.StatusBadRequest, fmt.Sprintf("Error updating product: %v", err))
+	} else {
+		respondWithJson(w, r, http.StatusAccepted, product)
 	}
 }
 

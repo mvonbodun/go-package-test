@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/mvonbodun/go-package-test/catalog"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"strconv"
@@ -39,6 +40,7 @@ type ProductService struct {
 	get    *sql.Stmt
 	list   *sql.Stmt
 	insert *sql.Stmt
+	update *sql.Stmt
 	delete *sql.Stmt
 }
 
@@ -48,13 +50,14 @@ type (
 	GetStatement    SqlStatement
 	ListStatement   SqlStatement
 	InsertStatement SqlStatement
+	UpdateStatement SqlStatement
 	DeleteStatement SqlStatement
 )
 
 // prepareSqlStmts prepares the SQL statements ahead of time resulting in faster performance.
 func (s *ProductService) prepareSqlStmts() error {
 	// Prepare all the SQL statements
-	if err := s.prepareSqlStmt(getstmt, liststmt, insertstmt, deletestmt); err != nil {
+	if err := s.prepareSqlStmt(getstmt, liststmt, insertstmt, updatestmt, deletestmt); err != nil {
 		return err
 	}
 	return nil
@@ -77,6 +80,10 @@ func (s *ProductService) prepareSqlStmt(stmts ...interface{}) error {
 		case InsertStatement:
 			if s.insert, err = s.client.db.Prepare(string(insertstmt)); err != nil {
 				return fmt.Errorf("mysql: prepare insert: %v", err)
+			}
+		case UpdateStatement:
+			if s.update, err = s.client.db.Prepare(string(updatestmt)); err != nil {
+				return fmt.Errorf("mysql: prepare update: %v", err)
 			}
 		case DeleteStatement:
 			if s.delete, err = s.client.db.Prepare(string(deletestmt)); err != nil {
@@ -148,6 +155,27 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *catalog.Pro
 	log.WithField("productId", product.ID).
 		Debugf("New product.ProductId: %d", id)
 	return err
+}
+
+var updatestmt UpdateStatement = "UPDATE product SET productcode=?, shortdesc=?, longdesc=? WHERE id=?"
+
+// UpdateProduct updates an existing product in the database.
+func (s *ProductService) UpdateProduct(ctx context.Context, product *catalog.Product) error {
+	log.Infof("product: %v", product)
+	if len(product.ID) == 0 {
+		return errors.New("mysql: product with unassigned ID passed in to UpdateProduct")
+	}
+	res, err := s.update.ExecContext(ctx, product.ProductCode, product.ShortDesc, product.LongDesc, product.ID)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	affect, err := res.RowsAffected()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Debugf("Number of product rows updated: %d", affect)
+	return nil
 }
 
 var deletestmt DeleteStatement = "DELETE from product where id=?"

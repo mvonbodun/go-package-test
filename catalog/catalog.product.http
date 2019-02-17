@@ -13,17 +13,25 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlJrUTRPVFEzTV
 
 ###
 
-POST http://localhost:8080/product
+POST http://localhost:8082/product
 Accept: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlJrUTRPVFEzTVRVeVEwWTRPREk1TlVRd1JVRXhSRE5GUmtSQlFrWkdNVVEzTkRnME0wVkJOQSJ9.eyJpc3MiOiJodHRwczovL2dlYXV4Y29tbWVyY2UuYXV0aDAuY29tLyIsInN1YiI6ImRZQmdEY3dnNFpSam5yaHN6RXJ0bGViSU5ieVM5akM4QGNsaWVudHMiLCJhdWQiOiJodHRwOi8vZ29vZ2xlX2FwaSIsImlhdCI6MTU0OTQ4MzQzNSwiZXhwIjoxNTQ5NTY5ODM1LCJhenAiOiJkWUJnRGN3ZzRaUmpucmhzekVydGxlYklOYnlTOWpDOCIsImd0eSI6ImNsaWVudC1jcmVkZW50aWFscyJ9.WwwXVHNiX0a0PnpNYLj2ey6Rt-orK9g6RKw-839uSYvUmz8e9jDaeyUMRAi7HHm292CRB9Bv_5KdycD_oVoa0ufPZlpflJdkpWm453xqiGTpUOzOdhTCw1chxNNxMN1FRF2f5F2GpgKofxSdMDcQC--sGogrgfnFNcr8LPHfChHaoBxcXwi3QIEupnBgpNuM0oJ43zOjwKU1ccOd-DHsAA6wAsWtzJmPYRv0xg0rAqPq_x72q8IJr7He-6wj9o6MOstrN3XZKARAmtLzV0C8VtkGyCYs88fcdla6rsPDd2CHoEjlWHnO7rgUVhLED8Ss3M6_VjHlVcK4iglgLaXXqQ
 
-{  "productCode": "prod16", "shortDesc": "Short desc for prod 16", "longDesc": "Long desc for prod 16" }
+{  "productCode": "prod17", "shortDesc": "Short desc for prod 17", "longDesc": "Long desc for prod 17" }
 
 ###
 
 POST http://localhost:8080/product
 Accept: application/json
 
-{   }
+{  "productCode": "prod18", "shortDesc": "Short desc for prod 18", "longDesc": "Long desc for prod 18" }
+
+###
+
+PUT http://localhost:8080/product
+Accept: application/json
+
+{ "productId": "15", "productCode": "prod15", "shortDesc": "Shortest description for prod 15", "longDesc": "Longest desc for prod 15" }
 
 ###
 

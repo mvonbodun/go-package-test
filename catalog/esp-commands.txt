@@ -1,11 +1,10 @@
-sudo docker run \
-    --detach \
-    --name="esp" \
-    --publish=8082:8082 \
-    --volume=$HOME/Downloads:/esp \
-    gcr.io/endpoints-release/endpoints-runtime:1 \
-    --service=catalog-api.endpoints.demogeauxcommerce.cloud.goog \
-    --rollout_strategy=managed \
-    --http_port=8082 \
-    --backend=localhost:8080 \
-    --service_account_key=/esp/service-account-creds.json
+# For MySql
+docker run --name mysql2 --net my-bridge -p 3306:3306 -e MYSQL_ROOT_PASSWORD=passw0rd -d mysql:latest
+
+# For Catalog API Microservice
+docker build -t catalog-api:latest .
+docker run -d -p 8080:8080 -e MYSQL_DB_USER='root' -e MYSQL_DB_PASSWORD='passw0rd' -e MYSQL_DB_HOST='172.17.0.1:3306' -e USE_STACKDRIVER='FALSE' --net my-bridge --name catalog-api catalog-api
+docker run -d -p 8080:8080 -e MYSQL_DB_USER='root' -e MYSQL_DB_PASSWORD='passw0rd' -e MYSQL_DB_HOST='172.17.0.1:3306' -e USE_STACKDRIVER='true' --net my-bridge --name catalog gcr.io/demogeauxcommerce/catalog:5f5ee738ddfd8e850be679a5c192d5b7f38833f9
+
+# For ESP - Google Endpoint Service Proxy
+sudo docker run --detach --name="esp" --publish=8082:8082 --volume=$HOME/Downloads:/esp gcr.io/endpoints-release/endpoints-runtime:1 --service=catalog-api.endpoints.demogeauxcommerce.cloud.goog --rollout_strategy=managed --http_port=8082 --backend=172.17.0.1:8080 --service_account_key=/esp/service-account-creds.json
