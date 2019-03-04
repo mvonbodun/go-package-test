@@ -87,6 +87,8 @@ paths:
         name: productId
         required: true
         type: "string"
+      security:
+      - auth0_jwk: []
     delete:
       tags:
       - "product"

@@ -3,12 +3,15 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/codegangsta/negroni"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/mvonbodun/go-package-test/catalog"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type Handler struct {
@@ -28,22 +31,26 @@ func NewHandler() *Handler {
 func (h *Handler) registerHandlers() *mux.Router {
 	// Use gorilla/mux for rich routing
 	r := mux.NewRouter()
+	//r.PathPrefix("/product")
 	//  All API calls leverage application/json
 	s := r.Headers("Accept", "application/json").Subrouter()
 
-	s.Methods("GET").Path("/product/{id:[0-9]+}").
+	read := s.Methods("GET").Handler(negroni.New(negroni.HandlerFunc(readMiddleware)))
+	write := s.Methods("POST", "PUT", "DELETE").Handler(negroni.New(negroni.HandlerFunc(writeMiddleware)))
+
+	read.Path("/product/{id:[0-9]+}").
 		HandlerFunc(h.GetProduct)
 
-	s.Methods("GET").Path("/products").
+	read.Path("/products").
 		HandlerFunc(h.GetProducts)
 
-	s.Methods("POST").Path("/product").
+	write.Path("/product").
 		HandlerFunc(h.AddProduct)
 
-	s.Methods("PUT").Path("/product").
+	write.Path("/product").
 		HandlerFunc(h.UpdateProduct)
 
-	s.Methods("DELETE").Path("/product/{id:[0-9]+}").
+	write.Path("/product/{id:[0-9]+}").
 		HandlerFunc(h.DeleteProduct)
 
 	http.Handle("/", handlers.CompressHandler(handlers.CombinedLoggingHandler(os.Stdout, r)))
@@ -143,4 +150,50 @@ func respondWithJson(w http.ResponseWriter, r *http.Request, code int, payload i
 
 func respondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {
 	respondWithJson(w, r, code, map[string]string{"error": message})
+}
+
+type CustomClaims struct {
+	Scope string `json:"scope"`
+	jwt.StandardClaims
+}
+
+func checkScope(scope string, tokenString string) bool {
+	token, _ := jwt.ParseWithClaims(tokenString, &CustomClaims{}, nil)
+	claims, _ := token.Claims.(*CustomClaims)
+	hasScope := false
+	result := strings.Split(claims.Scope, " ")
+	for i := range result {
+		if result[i] == scope {
+			hasScope = true
+		}
+	}
+	return hasScope
+}
+
+func readMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	authHeaderParts := strings.Split(r.Header.Get("Authorization"), " ")
+	token := authHeaderParts[1]
+
+	hasScope := checkScope("read:product", token)
+	if !hasScope {
+		message := "Insufficient scope. read:product needed"
+		respondWithError(w, r, 401, message)
+		return
+	}
+	// Call the next handler
+	next(w, r)
+}
+
+func writeMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	authHeaderParts := strings.Split(r.Header.Get("Authorization"), " ")
+	token := authHeaderParts[1]
+
+	hasScope := checkScope("write:product", token)
+	if !hasScope {
+		message := "Insufficient scope. write:product needed"
+		respondWithError(w, r, 401, message)
+		return
+	}
+	// Call the next handler
+	next(w, r)
 }
