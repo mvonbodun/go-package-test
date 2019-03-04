@@ -35,23 +35,31 @@ func (h *Handler) registerHandlers() *mux.Router {
 	//  All API calls leverage application/json
 	s := r.Headers("Accept", "application/json").Subrouter()
 
-	read := s.Methods("GET").Handler(negroni.New(negroni.HandlerFunc(readMiddleware)))
-	write := s.Methods("POST", "PUT", "DELETE").Handler(negroni.New(negroni.HandlerFunc(writeMiddleware)))
+	//read := s.Methods("GET").
+	//	Handler(negroni.New(
+	//		negroni.HandlerFunc(readMiddleware),
+	//		negroni.Wrap(s)))
+	//write := s.Methods("POST", "PUT", "DELETE").Handler(negroni.New(negroni.HandlerFunc(writeMiddleware)))
 
-	read.Path("/product/{id:[0-9]+}").
-		HandlerFunc(h.GetProduct)
+	s.Path("/product/{id:[0-9]+}").Handler(negroni.New(
+		negroni.HandlerFunc(readMiddleware),
+		negroni.WrapFunc(h.GetProduct)))
 
-	read.Path("/products").
-		HandlerFunc(h.GetProducts)
+	s.Path("/products").Handler(negroni.New(
+		negroni.HandlerFunc(readMiddleware),
+		negroni.WrapFunc(h.GetProducts)))
 
-	write.Path("/product").
-		HandlerFunc(h.AddProduct)
+	s.Path("/product").Handler(negroni.New(
+		negroni.HandlerFunc(writeMiddleware),
+		negroni.WrapFunc(h.AddProduct)))
 
-	write.Path("/product").
-		HandlerFunc(h.UpdateProduct)
+	s.Path("/product").Handler(negroni.New(
+		negroni.HandlerFunc(writeMiddleware),
+		negroni.WrapFunc(h.UpdateProduct)))
 
-	write.Path("/product/{id:[0-9]+}").
-		HandlerFunc(h.DeleteProduct)
+	s.Path("/product/{id:[0-9]+}").Handler(negroni.New(
+		negroni.HandlerFunc(writeMiddleware),
+		negroni.WrapFunc(h.DeleteProduct)))
 
 	http.Handle("/", handlers.CompressHandler(handlers.CombinedLoggingHandler(os.Stdout, r)))
 
@@ -160,6 +168,7 @@ type CustomClaims struct {
 func checkScope(scope string, tokenString string) bool {
 	token, _ := jwt.ParseWithClaims(tokenString, &CustomClaims{}, nil)
 	claims, _ := token.Claims.(*CustomClaims)
+	log.Debugf("claims: %v\n", claims)
 	hasScope := false
 	result := strings.Split(claims.Scope, " ")
 	for i := range result {
@@ -173,6 +182,7 @@ func checkScope(scope string, tokenString string) bool {
 func readMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	authHeaderParts := strings.Split(r.Header.Get("Authorization"), " ")
 	token := authHeaderParts[1]
+	log.Debugf("readMiddleware token: %v\n", token)
 
 	hasScope := checkScope("read:product", token)
 	if !hasScope {
